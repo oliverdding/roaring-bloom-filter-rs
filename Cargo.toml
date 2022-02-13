@@ -1,0 +1,13 @@
+[package]
+name = "bloom-filter"
+version = "0.1.0"
+authors = ["oliverdding <oliverdding@outlook.com>"]
+edition = "2021"
+description = "codewars's solutions in rust"
+readme = "https://github.com/oliverdding/bloom-filter/blob/main/README.md"
+homepage = "https://github.com/oliverdding/bloom-filter"
+repository = "https://github.com/oliverdding/bloom-filter.git"
+license-file = "LICENSE"
+keywords = ["bloom filter", "algorithms", "bloom"]
+
+[dependencies]
