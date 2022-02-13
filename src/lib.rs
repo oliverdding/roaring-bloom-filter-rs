@@ -3,22 +3,22 @@ use std::ops::{Div, Sub};
 
 use roaring::RoaringBitmap;
 
-pub struct BloomFilter<T> {
+pub struct BloomFilter<'a, T> {
     rb: RoaringBitmap,
     m: u64,
-    fn_vec: Vec<fn(&T) -> u32>,
+    fn_vec: Vec<&'a dyn Fn(&T) -> u32>,
 }
 
-impl<T> BloomFilter<T> {
-    pub fn new(m: u64, fn_vec: &[fn(&T) -> u32]) -> BloomFilter<T> {
+impl<T> BloomFilter<'_, T> {
+    pub fn new<'a>(m: u64, fn_vec: Vec<&'a dyn Fn(&T) -> u32>) -> BloomFilter<'a, T> {
         assert_ne!(m, 0);
         assert_ne!(fn_vec.len(), 0);
         assert!(fn_vec.len() < m as usize);
-        BloomFilter { rb: RoaringBitmap::new(), m, fn_vec: fn_vec.to_vec() }
+        BloomFilter { rb: RoaringBitmap::new(), m, fn_vec }
     }
 
     pub fn add(&mut self, value: T) {
-        self.fn_vec.iter().map(|hash_fn: &fn(&T) -> u32| {
+        self.fn_vec.iter().map(|hash_fn: &&dyn Fn(&T) -> u32| {
             hash_fn(&value)
         }).for_each(|key: u32| {
             println!("add: {}", key);
@@ -27,7 +27,7 @@ impl<T> BloomFilter<T> {
     }
 
     pub fn contains(&mut self, value: T) -> bool {
-        self.fn_vec.iter().map(|hash_fn: &fn(&T) -> u32| {
+        self.fn_vec.iter().map(|hash_fn: &&dyn Fn(&T) -> u32| {
             hash_fn(&value)
         }).all(|key: u32| {
             println!("con: {}", key);
@@ -55,7 +55,7 @@ impl<T> BloomFilter<T> {
     }
 }
 
-impl<T> fmt::Display for BloomFilter<T> {
+impl<T> fmt::Display for BloomFilter<'_, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.rb.len() < 16 {
             write!(f, "RoaringBitmap<{:?}>", self.rb.iter().collect::<Vec<u32>>())
@@ -83,14 +83,7 @@ mod tests {
 
     #[test]
     fn simple_str_test() {
-        fn hash1(value: &String) -> u32 {
-            hash(value.as_ref(), 0, 10)
-        }
-        fn hash2(value: &String) -> u32 {
-            hash(value.as_ref(), 1, 10)
-        }
-
-        let mut bf = BloomFilter::new(10, &[hash1, hash2]);
+        let mut bf = BloomFilter::new(10, vec![&|value: &String| hash(value.as_ref(), 0, 10), &|value: &String| hash(value.as_ref(), 1, 10)]);
         bf.add(String::from("hello"));
         println!("{}", bf.false_positive_rate());
         bf.add(String::from("mckas"));
@@ -105,14 +98,7 @@ mod tests {
 
     #[test]
     fn simple_int_test() {
-        fn hash1(value: &i32) -> u32 {
-            hash(value.to_be_bytes().as_ref(), 0, 10)
-        }
-        fn hash2(value: &i32) -> u32 {
-            hash(value.to_be_bytes().as_ref(), 1, 10)
-        }
-
-        let mut bf = BloomFilter::new(10, &[hash1, hash2]);
+        let mut bf = BloomFilter::new(10, vec![&|value: &i32| hash(value.to_be_bytes().as_ref(), 0, 10), &|value: &i32| hash(value.to_be_bytes().as_ref(), 1, 10)]);
         bf.add(2022);
         println!("{}", bf.false_positive_rate());
         bf.add(1970);
