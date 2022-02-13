@@ -3,11 +3,15 @@ name = "bloom-filter"
 version = "0.1.0"
 authors = ["oliverdding <oliverdding@outlook.com>"]
 edition = "2021"
-description = "codewars's solutions in rust"
-readme = "https://github.com/oliverdding/bloom-filter/blob/main/README.md"
-homepage = "https://github.com/oliverdding/bloom-filter"
-repository = "https://github.com/oliverdding/bloom-filter.git"
+description = "bloom filter implementation in rust with roaring-bitmap"
+readme = "https://github.com/oliverdding/bloom-filter-rs/blob/main/README.md"
+homepage = "https://github.com/oliverdding/bloom-filter-rs"
+repository = "https://github.com/oliverdding/bloom-filter-rs"
 license-file = "LICENSE"
 keywords = ["bloom filter", "algorithms", "bloom"]
 
 [dependencies]
+roaring = "*"
+
+[dev-dependencies]
+fasthash = "*"
