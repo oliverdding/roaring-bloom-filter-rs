@@ -2,9 +2,9 @@ use std::collections::hash_map::DefaultHasher;
 use std::fmt;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
-use std::ops::BitOr;
+use std::ops::{BitOr, Div};
 
-use log::{debug, info, trace, warn};
+use log::{debug, info, trace};
 
 use roaring::RoaringTreemap;
 
@@ -102,7 +102,9 @@ impl BloomFilter {
     // Get current false positive rate.
     pub fn current_false_positive_rate(&self) -> f64 {
         trace!(target: "BloomFilter", "current_false_positive_rate()");
-        calculate_false_positive_rate(self.m, self.n, self.k)
+        self.slices.iter().map(|slice| {
+            (slice.len() as f64).div(self.m as f64)
+        }).fold(1_f64, |res, slice_f| res * slice_f)
     }
 
     // If this bloom filter is empty.
@@ -153,13 +155,10 @@ mod tests {
     fn simple_int_test() {
         init();
         let mut bf = BloomFilter::new(100, 0.001_f64);
-        bf.add(&1);
-        debug!("false positive is {}", bf.current_false_positive_rate());
-        bf.add(&2);
-        debug!("false positive is {}", bf.current_false_positive_rate());
-        bf.add(&3);
-        debug!("false positive is {}", bf.current_false_positive_rate());
-        bf.add(&4);
+        (0..5).for_each(|i| {
+            bf.add(&i);
+            debug!("false positive is {}", bf.current_false_positive_rate());
+        });
 
         debug!("if contains 2: {}", bf.contains(&2));
         debug!("if contains 5: {}", bf.contains(&5));
