@@ -1,20 +1,24 @@
 use std::collections::hash_map::DefaultHasher;
 use std::fmt;
+use std::fmt::Display;
 use std::hash::{Hash, Hasher};
+use std::ops::BitOr;
 
-use roaring::RoaringBitmap;
+use log::{debug, info, trace, warn};
+
+use roaring::RoaringTreemap;
 
 use crate::utils::*;
 
 pub struct BloomFilter {
-    slices: Vec<RoaringBitmap>,
+    slices: Vec<RoaringTreemap>,
     // slices_length
     k: u32,
     // slice_size
-    m: u32,
-    // max_size
+    m: u64,
+    // counter for inserted elements
     n: u64,
-    // target_false_positive
+    // target_false_positive_rate
     f: f64,
 }
 
@@ -25,90 +29,139 @@ impl BloomFilter {
     // Promise the limitation on yourself:
     // * 0 < k <= u32::MAX
     // * 0 < m <= u32::MAX
-    // * 0 < n <= u64::MAX
     // * 0 < f < 1
-    pub fn from_scratch(slices_length: u32, slice_size: u32, max_size: u64, target_false_positive: f64) -> BloomFilter {
-        let slices: Vec<RoaringBitmap> = (0..slice_size).map(|_| {
-            RoaringBitmap::new()
+    pub fn from_scratch(slices_length: u32, slice_size: u64, target_false_positive_rate: f64) -> BloomFilter {
+        trace!(target: "BloomFilter", "from_scratch(k = {}, m = {}, f = {})",
+            slices_length, slice_size, target_false_positive_rate);
+        let slices: Vec<RoaringTreemap> = (0..slices_length).map(|_| {
+            RoaringTreemap::new()
         }).collect();
         BloomFilter {
             slices,
             k: slices_length,
             m: slice_size,
-            n: max_size,
-            f: target_false_positive,
+            n: 0,
+            f: target_false_positive_rate,
         }
     }
 
     // Create an empty bloom filter with max element's size and false positive rate.
     // The crate would calculate the best buckets length and bucket size.
     pub fn new(max_size: u64, target_false_positive: f64) -> BloomFilter {
+        trace!(target: "BloomFilter", "new(n = {}, f = {})", max_size, target_false_positive);
         assert_ne!(max_size, 0_u64);
         assert!(target_false_positive.lt(&1_f64) && target_false_positive.gt(&0_f64));
 
         let k = calculate_best_k(target_false_positive);
+        info!(target: "BloomFilter", "the best k is {}", k);
         let m = calculate_best_m(max_size);
-        BloomFilter::from_scratch(k, m, max_size, target_false_positive)
+        info!(target: "BloomFilter", "the best m is {}", m);
+        BloomFilter::from_scratch(k, m, target_false_positive)
     }
 
-    // Get current false positive rate.
-    pub fn false_positive_rate(&self) -> f64 {
-        calculate_false_positive_rate(self.m, self.len(), self.k)
+    // Add new element into the bloom filter.
+    // Return true when any key are inserted in a slice.
+    pub fn add<T>(&mut self, value: &T) -> bool
+        where T: Hash + Display {
+        trace!(target: "BloomFilter", "add({})", value);
+        info!(target: "BloomFilter", "adding element: {}", value);
+        self.n = self.n + 1;
+        (0..self.k).map(|i| {
+            let key = self.get_hash(value, i) % self.m;
+            debug!(target: "BloomFilter", "inserting the key: {}", key);
+            self.slices[i as usize].insert(key)
+        }).fold(false, |res, is_exist| res.bitor(is_exist)) // cannot use any() here
     }
 
-    // If this bloom filter is empty.
-    pub fn is_empty(&self) -> bool {
-        self.slices.iter().all(|slice| {
-            slice.is_empty()
+    // Check if the bloom filter contains the specific key.
+    // Return tre when all key are present in all slices, which may contains false positive situation.
+    pub fn contains<T>(&mut self, value: &T) -> bool
+        where T: Hash + Display {
+        trace!(target: "BloomFilter", "contains({})", value);
+        info!(target: "BloomFilter", "checking if element exists: {}", value);
+        (0..self.k).all(|i| {
+            let key = self.get_hash(value, i) % self.m;
+            debug!(target: "BloomFilter", "checking the key: {}", key);
+            self.slices[i as usize].contains(key)
         })
     }
 
-    // Get the max size of elements this bloom filter can hold.
-    pub fn capacity(&self) -> u64 {
-        self.n
-    }
-
-    // Get the number of inserted elements
-    pub fn len(&self) -> u64 {
-        self.slices.iter().map(|slice| slice.len()).sum()
-    }
-}
-
-impl<T> BloomFilter
-    where T: Hash {
-    fn get_hash(&self, value: T, seed: u32) -> u64 {
+    fn get_hash<T: Hash>(&self, value: &T, seed: u32) -> u64 {
         let mut s = DefaultHasher::new();
         value.hash(&mut s);
         seed.hash(&mut s);
         s.finish()
     }
 
-    pub fn add(&mut self, value: T) {
-        todo!()
+    // Get target false positive rate.
+    pub fn target_false_positive_rate(&self) -> f64 {
+        trace!(target: "BloomFilter", "target_false_positive_rate()");
+        self.f
     }
 
-    pub fn contains(&mut self, value: T) -> bool {
-        todo!()
+    // Get current false positive rate.
+    pub fn current_false_positive_rate(&self) -> f64 {
+        trace!(target: "BloomFilter", "current_false_positive_rate()");
+        calculate_false_positive_rate(self.m, self.n, self.k)
+    }
+
+    // If this bloom filter is empty.
+    pub fn is_empty(&self) -> bool {
+        trace!(target: "BloomFilter", "is_empty()");
+        self.slices.iter().all(|slice| {
+            slice.is_empty()
+        })
+    }
+
+    // If this bloom filter is full.
+    pub fn is_full(&self) -> bool {
+        trace!(target: "BloomFilter", "is_full()");
+        self.current_false_positive_rate() >= self.target_false_positive_rate()
+    }
+
+    // Get the number of inserted elements in this bloom filter.
+    pub fn size(&self) -> u64 {
+        trace!(target: "BloomFilter", "len()");
+        self.n
+    }
+
+    // Get the number of inserted bits in all slices.
+    pub fn len(&self) -> u64 {
+        trace!(target: "BloomFilter", "len()");
+        self.slices.iter().map(|slice| slice.len()).sum()
     }
 }
 
 impl fmt::Display for BloomFilter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.rb.len() < 16 {
-            write!(f, "RoaringBitmap<{:?}>", self.rb.iter().collect::<Vec<u32>>())
-        } else {
-            write!(
-                f,
-                "RoaringBitmap<{:?} values between {:?} and {:?}>",
-                self.rb.len(),
-                self.rb.min().unwrap(),
-                self.rb.max().unwrap()
-            )
-        }
+        write!(f, "BloomFilter")
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use std::env;
+
+    fn init() {
+        env::set_var("RUST_LOG", "trace");
+        let _ = env_logger::builder().is_test(true).try_init();
+    }
+
+    #[test]
+    fn simple_int_test() {
+        init();
+        let mut bf = BloomFilter::new(100, 0.001_f64);
+        bf.add(&1);
+        debug!("false positive is {}", bf.current_false_positive_rate());
+        bf.add(&2);
+        debug!("false positive is {}", bf.current_false_positive_rate());
+        bf.add(&3);
+        debug!("false positive is {}", bf.current_false_positive_rate());
+        bf.add(&4);
+
+        debug!("if contains 2: {}", bf.contains(&2));
+        debug!("if contains 5: {}", bf.contains(&5));
+    }
 }
