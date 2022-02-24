@@ -1,14 +1,14 @@
 [package]
-name = "bloom-filter"
+name = "roaring-bloom-filter"
 version = "0.1.0"
 authors = ["oliverdding <oliverdding@outlook.com>"]
 edition = "2021"
 description = "bloom filter implementation in rust with roaring-bitmap"
 readme = "README.md"
-homepage = "https://github.com/oliverdding/bloom-filter-rs"
-repository = "https://github.com/oliverdding/bloom-filter-rs"
+homepage = "https://github.com/oliverdding/roaring-bloom-filter-rs"
+repository = "https://github.com/oliverdding/roaring-bloom-filter-rs"
 license-file = "LICENSE"
-keywords = ["bloom-filter", "algorithms", "bloom"]
+keywords = ["scalable-bloom-filter", "bloom-filter", "algorithms", "roaring-bitmap"]
 
 [dependencies]
 roaring = "*"
