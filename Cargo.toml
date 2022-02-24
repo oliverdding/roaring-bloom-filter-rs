@@ -8,7 +8,7 @@ readme = "README.md"
 homepage = "https://github.com/oliverdding/roaring-bloom-filter-rs"
 repository = "https://github.com/oliverdding/roaring-bloom-filter-rs"
 license-file = "LICENSE"
-keywords = ["scalable-bloom-filter", "bloom-filter", "algorithms", "roaring-bitmap"]
+keywords = ["bloom-filter", "algorithms", "roaring-bitmap", "datastructure"]
 
 [dependencies]
 roaring = "*"
