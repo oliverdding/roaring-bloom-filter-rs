@@ -8,7 +8,7 @@ readme = "README.md"
 homepage = "https://github.com/oliverdding/bloom-filter-rs"
 repository = "https://github.com/oliverdding/bloom-filter-rs"
 license-file = "LICENSE"
-keywords = ["bloom filter", "algorithms", "bloom"]
+keywords = ["bloom-filter", "algorithms", "bloom"]
 
 [dependencies]
 roaring = "*"
@@ -16,3 +16,4 @@ log = "*"
 
 [dev-dependencies]
 env_logger = "*"
+
