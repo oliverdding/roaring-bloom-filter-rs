@@ -12,13 +12,13 @@ use crate::utils::*;
 
 pub struct BloomFilter {
     slices: Vec<RoaringTreemap>,
-    // slices_length
+    // slices length
     k: u32,
-    // slice_size
+    // slice size
     m: u64,
     // counter for inserted elements
     n: u64,
-    // target_false_positive_rate
+    // target false positive rate
     f: f64,
 }
 
@@ -160,7 +160,24 @@ mod tests {
             debug!("false positive is {}", bf.current_false_positive_rate());
         });
 
-        debug!("if contains 2: {}", bf.contains(&2));
-        debug!("if contains 5: {}", bf.contains(&5));
+        assert!(bf.contains(&2));
+        assert!(!bf.contains(&5));
+    }
+
+    #[test]
+    fn multiple_value_test() {
+        init();
+        let mut bf = BloomFilter::new(100, 0.001_f64);
+
+        (-25..25).for_each(|i| {
+            bf.add(&i);
+        });
+        bf.add(&'*');
+        bf.add(&"this is a string");
+
+        debug!("false positive is {}", bf.current_false_positive_rate());
+
+        assert!(bf.contains(&2));
+        assert!(bf.contains(&5));
     }
 }
