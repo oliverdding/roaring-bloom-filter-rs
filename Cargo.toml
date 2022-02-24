@@ -4,10 +4,10 @@ version = "0.1.0"
 authors = ["oliverdding <oliverdding@outlook.com>"]
 edition = "2021"
 description = "bloom filter implementation in rust with roaring-bitmap"
+license = "AGPL-3.0"
 readme = "README.md"
 homepage = "https://github.com/oliverdding/roaring-bloom-filter-rs"
 repository = "https://github.com/oliverdding/roaring-bloom-filter-rs"
-license-file = "LICENSE"
 keywords = ["bloom-filter", "algorithms", "roaring-bitmap", "datastructure"]
 
 [dependencies]
