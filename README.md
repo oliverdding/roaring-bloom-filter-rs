@@ -28,7 +28,6 @@ bf.add(&"a string");
 
 // Check if exist
 bf.contains(&12)
-
 ```
 
 ## TODO
