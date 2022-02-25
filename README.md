@@ -4,7 +4,7 @@ Scalable bloom filter implementation in rust with roaring-bitmap.
 
 > This crate is built on top of the variant of Bloom filters from:
 > 
-> F. Chang, W. chang Feng, K. Li, Approximate caches for packet classification.
+> *F. Chang, W. chang Feng, K. Li, Approximate caches for packet classification.*
 
 ## Installation
 
@@ -27,7 +27,7 @@ bf.add(&'a');
 bf.add(&"a string");
 
 // Check if exist
-bf.contains()
+bf.contains(&12)
 
 ```
 
