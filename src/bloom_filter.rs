@@ -1,6 +1,5 @@
 use std::collections::hash_map::DefaultHasher;
 use std::fmt;
-use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::ops::{BitOr, Div};
 
@@ -31,7 +30,7 @@ impl BloomFilter {
     // * 0 < m <= u32::MAX
     // * 0 < f < 1
     pub fn from_scratch(slices_length: u32, slice_size: u64, target_false_positive_rate: f64) -> BloomFilter {
-        trace!(target: "BloomFilter", "from_scratch(k = {}, m = {}, f = {})",
+        trace!(target: "BloomFilter", "from_scratch(k = {}, m = {}, f = {}) called",
             slices_length, slice_size, target_false_positive_rate);
         let slices: Vec<RoaringTreemap> = (0..slices_length).map(|_| {
             RoaringTreemap::new()
@@ -48,7 +47,7 @@ impl BloomFilter {
     // Create an empty bloom filter with max element's size and false positive rate.
     // The crate would calculate the best buckets length and bucket size.
     pub fn new(max_size: u64, target_false_positive: f64) -> BloomFilter {
-        trace!(target: "BloomFilter", "new(n = {}, f = {})", max_size, target_false_positive);
+        trace!(target: "BloomFilter", "new(n = {}, f = {}) called", max_size, target_false_positive);
         assert_ne!(max_size, 0_u64);
         assert!(target_false_positive.lt(&1_f64) && target_false_positive.gt(&0_f64));
 
@@ -62,9 +61,8 @@ impl BloomFilter {
     // Add new element into the bloom filter.
     // Return true when any key are inserted in a slice.
     pub fn add<T>(&mut self, value: &T) -> bool
-        where T: Hash + Display {
-        trace!(target: "BloomFilter", "add({})", value);
-        info!(target: "BloomFilter", "adding element: {}", value);
+        where T: Hash {
+        trace!(target: "BloomFilter", "add() called");
         self.n = self.n + 1;
         (0..self.k).map(|i| {
             let key = self.get_hash(value, i) % self.m;
@@ -74,11 +72,10 @@ impl BloomFilter {
     }
 
     // Check if the bloom filter contains the specific key.
-    // Return tre when all key are present in all slices, which may contains false positive situation.
+    // Return true when all key are present in all slices, which may contains false positive situation.
     pub fn contains<T>(&mut self, value: &T) -> bool
-        where T: Hash + Display {
-        trace!(target: "BloomFilter", "contains({})", value);
-        info!(target: "BloomFilter", "checking if element exists: {}", value);
+        where T: Hash {
+        trace!(target: "BloomFilter", "contains() called");
         (0..self.k).all(|i| {
             let key = self.get_hash(value, i) % self.m;
             debug!(target: "BloomFilter", "checking the key: {}", key);
@@ -95,13 +92,13 @@ impl BloomFilter {
 
     // Get target false positive rate.
     pub fn target_false_positive_rate(&self) -> f64 {
-        trace!(target: "BloomFilter", "target_false_positive_rate()");
+        trace!(target: "BloomFilter", "target_false_positive_rate() called");
         self.f
     }
 
     // Get current false positive rate.
     pub fn current_false_positive_rate(&self) -> f64 {
-        trace!(target: "BloomFilter", "current_false_positive_rate()");
+        trace!(target: "BloomFilter", "current_false_positive_rate() called");
         self.slices.iter().map(|slice| {
             (slice.len() as f64).div(self.m as f64)
         }).fold(1_f64, |res, slice_f| res * slice_f)
@@ -109,7 +106,7 @@ impl BloomFilter {
 
     // If this bloom filter is empty.
     pub fn is_empty(&self) -> bool {
-        trace!(target: "BloomFilter", "is_empty()");
+        trace!(target: "BloomFilter", "is_empty() called");
         self.slices.iter().all(|slice| {
             slice.is_empty()
         })
@@ -117,19 +114,19 @@ impl BloomFilter {
 
     // If this bloom filter is full.
     pub fn is_full(&self) -> bool {
-        trace!(target: "BloomFilter", "is_full()");
+        trace!(target: "BloomFilter", "is_full() called");
         self.current_false_positive_rate() >= self.target_false_positive_rate()
     }
 
     // Get the number of inserted elements in this bloom filter.
     pub fn size(&self) -> u64 {
-        trace!(target: "BloomFilter", "len()");
+        trace!(target: "BloomFilter", "len() called");
         self.n
     }
 
     // Get the number of inserted bits in all slices.
     pub fn len(&self) -> u64 {
-        trace!(target: "BloomFilter", "len()");
+        trace!(target: "BloomFilter", "len() called");
         self.slices.iter().map(|slice| slice.len()).sum()
     }
 }

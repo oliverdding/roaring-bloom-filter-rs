@@ -1,2 +1,4 @@
 mod utils;
-pub mod bloom_filter;
+mod bloom_filter;
+
+pub use bloom_filter::BloomFilter;
