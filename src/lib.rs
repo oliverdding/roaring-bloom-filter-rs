@@ -1,5 +1,3 @@
-mod variant_bloom_filter;
-
 use std::hash::Hash;
 
 /// Interface for bloom filter.
@@ -32,4 +30,59 @@ pub trait BloomFilter {
     fn len(&self) -> u64;
 }
 
+mod stable_bloom_filter;
+
+/// Stable bloom filter, the best choice for small data set.
+/// In this structure, k hash functions share a global bitmap, whose max size is u64::MAX.
+/// Usage:
+/// ```rust
+/// use roaring_bloom_filter as bloom_filter;
+///
+/// let mut bf = bloom_filter::StableBloomFilter::new(100, 0.001_f64);
+///
+/// bf.add(&10);
+/// bf.add(&'a');
+/// bf.add(&"a string");
+///
+/// bf.contains(&12);
+/// ```
+pub use stable_bloom_filter::StableBloomFilter;
+
+mod variant_bloom_filter;
+
+/// A variant bloom filter, the best choice for bigger data set.
+/// In this structure, k hash functions all has it's own slice of bitmap, whose max size is u64::MAX.
+/// Usage:
+/// ```rust
+/// use roaring_bloom_filter as bloom_filter;
+///
+/// let mut bf = bloom_filter::VariantBloomFilter::new(100, 0.001_f64);
+///
+/// bf.add(&10);
+/// bf.add(&'a');
+/// bf.add(&"a string");
+///
+/// bf.contains(&12);
+/// ```
 pub use variant_bloom_filter::VariantBloomFilter;
+
+mod scalable_bloom_filter;
+
+/// A scalable bloom filter implementation, based on VariantBloomFilter.
+///
+/// TODO
+/// ```
+pub use scalable_bloom_filter::ScalableBloomFilter;
+
+/// global utils function
+mod utils {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    pub fn get_hash<T: Hash>(value: &T, seed: u32) -> u64 {
+        let mut s = DefaultHasher::new();
+        value.hash(&mut s);
+        seed.hash(&mut s);
+        s.finish()
+    }
+}

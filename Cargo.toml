@@ -8,7 +8,7 @@ license = "AGPL-3.0"
 readme = "README.md"
 homepage = "https://github.com/oliverdding/roaring-bloom-filter-rs"
 repository = "https://github.com/oliverdding/roaring-bloom-filter-rs"
-keywords = ["bloom-filter", "algorithms", "roaring-bitmap", "datastructure"]
+keywords = ["bloom-filter", "algorithms", "roaring", "datastructure"]
 
 [dependencies]
 roaring = "0.8.1"
