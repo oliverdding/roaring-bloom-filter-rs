@@ -11,7 +11,7 @@ repository = "https://github.com/oliverdding/roaring-bloom-filter-rs"
 keywords = ["bloom-filter", "algorithms", "roaring", "datastructure"]
 
 [dependencies]
-roaring = "0.8.1"
+roaring = "0.9.0"
 log = "0.4.14"
 
 [dev-dependencies]
