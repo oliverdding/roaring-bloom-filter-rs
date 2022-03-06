@@ -1,6 +1,6 @@
 [package]
 name = "roaring-bloom-filter"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["oliverdding <oliverdding@outlook.com>"]
 edition = "2021"
 description = "bloom filter implementation in rust with roaring-bitmap"
