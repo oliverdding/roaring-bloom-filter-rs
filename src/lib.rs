@@ -1,5 +1,50 @@
 use std::hash::Hash;
 
+/// A scalable bloom filter implementation, based on VariantBloomFilter.
+///
+/// ```rust
+/// use roaring_bloom_filter as bloom_filter;
+///
+/// let mut bf = bloom_filter::ScalableBloomFilter::new(100, 0.001_f64);
+///
+/// bf.add(&10);
+/// bf.add(&'a');
+/// bf.add(&"a string");
+///
+/// bf.contains(&12);
+/// ```
+pub use scalable_bloom_filter::ScalableBloomFilter;
+/// Stable bloom filter, the best choice for small data set.
+/// In this structure, k hash functions share a global bitmap, whose max size is u64::MAX.
+/// Usage:
+/// ```rust
+/// use roaring_bloom_filter as bloom_filter;
+///
+/// let mut bf = bloom_filter::StableBloomFilter::new(100, 0.001_f64);
+///
+/// bf.add(&10);
+/// bf.add(&'a');
+/// bf.add(&"a string");
+///
+/// bf.contains(&12);
+/// ```
+pub use stable_bloom_filter::StableBloomFilter;
+/// A variant bloom filter, the best choice for bigger data set.
+/// In this structure, k hash functions all has it's own slice of bitmap, whose max size is u64::MAX.
+/// Usage:
+/// ```rust
+/// use roaring_bloom_filter as bloom_filter;
+///
+/// let mut bf = bloom_filter::VariantBloomFilter::new(100, 0.001_f64);
+///
+/// bf.add(&10);
+/// bf.add(&'a');
+/// bf.add(&"a string");
+///
+/// bf.contains(&12);
+/// ```
+pub use variant_bloom_filter::VariantBloomFilter;
+
 /// Interface for bloom filter.
 /// Define all the function a bloom filter should implement.
 pub trait BloomFilter {
@@ -9,7 +54,7 @@ pub trait BloomFilter {
 
     /// Check if the bloom filter contains the specific key.
     /// Return true when all key are present in all slices, which may contains false positive situation.
-    fn contains<T>(&mut self, value: &T) -> bool where T: Hash;
+    fn contains<T>(&self, value: &T) -> bool where T: Hash;
 
     /// Get target false positive rate.
     fn target_false_positive_rate(&self) -> f64;
@@ -32,50 +77,12 @@ pub trait BloomFilter {
 
 mod stable_bloom_filter;
 
-/// Stable bloom filter, the best choice for small data set.
-/// In this structure, k hash functions share a global bitmap, whose max size is u64::MAX.
-/// Usage:
-/// ```rust
-/// use roaring_bloom_filter as bloom_filter;
-///
-/// let mut bf = bloom_filter::StableBloomFilter::new(100, 0.001_f64);
-///
-/// bf.add(&10);
-/// bf.add(&'a');
-/// bf.add(&"a string");
-///
-/// bf.contains(&12);
-/// ```
-pub use stable_bloom_filter::StableBloomFilter;
-
 mod variant_bloom_filter;
-
-/// A variant bloom filter, the best choice for bigger data set.
-/// In this structure, k hash functions all has it's own slice of bitmap, whose max size is u64::MAX.
-/// Usage:
-/// ```rust
-/// use roaring_bloom_filter as bloom_filter;
-///
-/// let mut bf = bloom_filter::VariantBloomFilter::new(100, 0.001_f64);
-///
-/// bf.add(&10);
-/// bf.add(&'a');
-/// bf.add(&"a string");
-///
-/// bf.contains(&12);
-/// ```
-pub use variant_bloom_filter::VariantBloomFilter;
 
 mod scalable_bloom_filter;
 
-/// A scalable bloom filter implementation, based on VariantBloomFilter.
-///
-/// TODO
-/// ```
-pub use scalable_bloom_filter::ScalableBloomFilter;
-
 /// global utils function
-mod utils {
+pub(crate) mod utils {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
 

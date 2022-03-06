@@ -7,9 +7,9 @@ use roaring::RoaringTreemap;
 
 use crate::BloomFilter;
 
-/// Normal bloom filter
+/// Stable Bloom Filter(SBF)
 ///
-/// Best choice for relatively small dataset.
+/// All hash function share the whole bitmap. Best choice for relatively small dataset.
 pub struct StableBloomFilter {
     bitmap: RoaringTreemap,
     // hash number
@@ -23,7 +23,7 @@ pub struct StableBloomFilter {
 }
 
 impl StableBloomFilter {
-    /// Create an empty bloom filter from scratch.
+    /// Create an empty stable bloom filter from scratch.
     ///
     /// Generally, user should not use this initializer directly.
     /// Promise the limitation on yourself:
@@ -59,7 +59,6 @@ impl StableBloomFilter {
 
 impl BloomFilter for StableBloomFilter {
     fn add<T>(&mut self, value: &T) -> bool where T: Hash {
-        trace!(target: "StableBloomFilter", "add() called");
         self.n = self.n + 1;
         (0..self.k).map(|i| {
             let key = crate::utils::get_hash(value, i) % self.m;
@@ -68,8 +67,7 @@ impl BloomFilter for StableBloomFilter {
         }).fold(false, |res, is_exist| res.bitor(is_exist)) // cannot use any() here
     }
 
-    fn contains<T>(&mut self, value: &T) -> bool where T: Hash {
-        trace!(target: "StableBloomFilter", "contains() called");
+    fn contains<T>(&self, value: &T) -> bool where T: Hash {
         (0..self.k).all(|i| {
             let key = crate::utils::get_hash(value, i) % self.m;
             debug!(target: "StableBloomFilter", "checking the key: {}", key);
@@ -78,7 +76,6 @@ impl BloomFilter for StableBloomFilter {
     }
 
     fn target_false_positive_rate(&self) -> f64 {
-        trace!(target: "StableBloomFilter", "target_false_positive_rate() called");
         self.f
     }
 
@@ -87,22 +84,18 @@ impl BloomFilter for StableBloomFilter {
     }
 
     fn is_empty(&self) -> bool {
-        trace!(target: "StableBloomFilter", "is_empty() called");
         self.bitmap.is_empty()
     }
 
     fn is_full(&self) -> bool {
-        trace!(target: "StableBloomFilter", "is_full() called");
         self.current_false_positive_rate() >= self.target_false_positive_rate()
     }
 
     fn size(&self) -> u64 {
-        trace!(target: "StableBloomFilter", "size() called");
         self.n
     }
 
     fn len(&self) -> u64 {
-        trace!(target: "StableBloomFilter", "len() called");
         self.bitmap.len()
     }
 }
@@ -113,7 +106,7 @@ impl fmt::Display for StableBloomFilter {
     }
 }
 
-mod utils {
+pub(crate) mod utils {
     use std::ops::{Div, Mul, Neg};
 
     pub fn calculate_best_m(n: u64, f: f64) -> u64 {

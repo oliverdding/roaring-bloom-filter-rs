@@ -7,7 +7,7 @@ use roaring::RoaringTreemap;
 
 use crate::BloomFilter;
 
-/// A variant of bloom filter
+/// Variant Bloom Filter(VBF)
 ///
 /// Every hash function has it's own slice instead of sharing the whole bitmap.
 /// This introduce the possibility of concurrency of manipulating multiply hash function at the same time.
@@ -24,7 +24,7 @@ pub struct VariantBloomFilter {
 }
 
 impl VariantBloomFilter {
-    /// Create an empty bloom filter from scratch.
+    /// Create an empty variant bloom filter from scratch.
     ///
     /// Generally, user should not use this initializer directly.
     /// Promise the limitation on yourself:
@@ -63,7 +63,6 @@ impl VariantBloomFilter {
 
 impl BloomFilter for VariantBloomFilter {
     fn add<T>(&mut self, value: &T) -> bool where T: Hash {
-        trace!(target: "VariantBloomFilter", "add() called");
         self.n = self.n + 1;
         (0..self.k).map(|i| {
             let key = crate::utils::get_hash(value, i) % self.m;
@@ -72,8 +71,7 @@ impl BloomFilter for VariantBloomFilter {
         }).fold(false, |res, is_exist| res.bitor(is_exist)) // cannot use any() here
     }
 
-    fn contains<T>(&mut self, value: &T) -> bool where T: Hash {
-        trace!(target: "VariantBloomFilter", "contains() called");
+    fn contains<T>(&self, value: &T) -> bool where T: Hash {
         (0..self.k).all(|i| {
             let key = crate::utils::get_hash(value, i) % self.m;
             debug!(target: "VariantBloomFilter", "checking the key: {}", key);
@@ -82,36 +80,30 @@ impl BloomFilter for VariantBloomFilter {
     }
 
     fn target_false_positive_rate(&self) -> f64 {
-        trace!(target: "VariantBloomFilter", "target_false_positive_rate() called");
         self.f
     }
 
     fn current_false_positive_rate(&self) -> f64 {
-        trace!(target: "VariantBloomFilter", "current_false_positive_rate() called");
         self.slices.iter().map(|slice| {
             (slice.len() as f64).div(self.m as f64)
         }).fold(1_f64, |res, slice_f| res * slice_f)
     }
 
     fn is_empty(&self) -> bool {
-        trace!(target: "VariantBloomFilter", "is_empty() called");
         self.slices.iter().all(|slice| {
             slice.is_empty()
         })
     }
 
     fn is_full(&self) -> bool {
-        trace!(target: "VariantBloomFilter", "is_full() called");
         self.current_false_positive_rate() >= self.target_false_positive_rate()
     }
 
     fn size(&self) -> u64 {
-        trace!(target: "VariantBloomFilter", "size() called");
         self.n
     }
 
     fn len(&self) -> u64 {
-        trace!(target: "VariantBloomFilter", "len() called");
         self.slices.iter().map(|slice| slice.len()).sum()
     }
 }
@@ -122,7 +114,7 @@ impl fmt::Display for VariantBloomFilter {
     }
 }
 
-mod utils {
+pub(crate) mod utils {
     use std::ops::{Div, Mul};
 
     pub fn calculate_best_m(n: u64, k: u32, f: f64) -> u64 {
