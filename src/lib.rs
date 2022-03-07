@@ -3,9 +3,9 @@ use std::hash::Hash;
 /// A scalable bloom filter implementation, based on VariantBloomFilter.
 ///
 /// ```rust
-/// use roaring_bloom_filter as bloom_filter;
+/// use roaring_bloom_filter::*;
 ///
-/// let mut bf = bloom_filter::ScalableBloomFilter::new(100, 0.001_f64);
+/// let mut bf = ScalableBloomFilter::new(100, 0.001_f64);
 ///
 /// bf.add(&10);
 /// bf.add(&'a');
@@ -18,9 +18,9 @@ pub use scalable_bloom_filter::ScalableBloomFilter;
 /// In this structure, k hash functions share a global bitmap, whose max size is u64::MAX.
 /// Usage:
 /// ```rust
-/// use roaring_bloom_filter as bloom_filter;
+/// use roaring_bloom_filter::*;
 ///
-/// let mut bf = bloom_filter::StableBloomFilter::new(100, 0.001_f64);
+/// let mut bf = StableBloomFilter::new(100, 0.001_f64);
 ///
 /// bf.add(&10);
 /// bf.add(&'a');
@@ -33,9 +33,9 @@ pub use stable_bloom_filter::StableBloomFilter;
 /// In this structure, k hash functions all has it's own slice of bitmap, whose max size is u64::MAX.
 /// Usage:
 /// ```rust
-/// use roaring_bloom_filter as bloom_filter;
+/// use roaring_bloom_filter::*;
 ///
-/// let mut bf = bloom_filter::VariantBloomFilter::new(100, 0.001_f64);
+/// let mut bf = VariantBloomFilter::new(100, 0.001_f64);
 ///
 /// bf.add(&10);
 /// bf.add(&'a');
